@@ -1,5 +1,4 @@
 # vue-todo
-<<<<<<< HEAD
 
 > A Vue.js project
 
