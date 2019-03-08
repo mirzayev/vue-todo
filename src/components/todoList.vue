@@ -11,29 +11,14 @@
       enter-active-class="animated fadeInUp"
       leave-active-class="animated fadeOutDown"
     >
-      <div v-for="todo in filteredTodos" :key="todo.id" class="todo-item">
-        <div class="todo-item-left">
-          <input type="checkbox" v-model="todo.isCompleted">
-          <div
-            title="For editing double click todo title"
-            :class="{completed: todo.isCompleted}"
-            @dblclick="editTodo(todo)"
-            v-if="!todo.isEditing"
-            class="todo-item-label"
-          >{{todo.title}}</div>
-          <input
-            class="todo-item-edit"
-            type="text"
-            v-model="todo.title"
-            v-if="todo.isEditing"
-            @blur="doneEdit(todo)"
-            @keyup.enter="doneEdit(todo)"
-            @keyup.esc="cancelEdit(todo)"
-            v-focus
-          >
-        </div>
-        <div class="remove-item" @click="removeTodo(todo.id)">&times;</div>
-      </div>
+      <todo-item
+        @removedTodo="removeTodo"
+        @finishedEdit="finishEdit"
+        v-for="todo in filteredTodos"
+        :key="todo.id"
+        :todo="todo"
+        :remaining="remaining"
+      ></todo-item>
     </transition-group>
     <div class="extra-container">
       <div>
@@ -59,23 +44,19 @@
 </template>
 
 <script>
+import todoItem from "./todoItem";
 export default {
   name: "todo-list",
+  components: {
+    todoItem
+  },
   data() {
     return {
       newTodo: "",
-      todoCache: "",
       filter: "all",
       index: 0,
       todos: []
     };
-  },
-  directives: {
-    focus: {
-      inserted(el) {
-        el.focus();
-      }
-    }
   },
   computed: {
     remaining() {
@@ -109,20 +90,6 @@ export default {
       this.index++;
       this.newTodo = "";
     },
-    editTodo(todo) {
-      this.todoCache = todo.title;
-      todo.isEditing = true;
-    },
-    doneEdit(todo) {
-      if (todo.title.trim() == "") {
-        todo.title = this.todoCache;
-      }
-      todo.isEditing = false;
-    },
-    cancelEdit(todo) {
-      todo.title = this.todoCache;
-      todo.isEditing = false;
-    },
     removeTodo(id) {
       this.todos = this.todos.filter(x => x.id != id);
     },
@@ -132,6 +99,11 @@ export default {
     },
     clearCompleted() {
       this.todos = this.todos.filter(x => !x.isCompleted);
+    },
+    finishEdit(data) {
+      // console.log(data);
+      const index = this.todos.findIndex(x => x.id == data.id);
+      this.todos.splice(index, 1, data);
     }
   }
 };
