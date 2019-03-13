@@ -30,10 +30,6 @@ export default {
     todo: {
       type: Object,
       required: true
-    },
-    remaining: {
-      type: Number,
-      required: true
     }
   },
   data() {
@@ -52,6 +48,11 @@ export default {
       }
     }
   },
+  computed: {
+    remaining() {
+      return this.$store.getters.remaining;
+    }
+  },
   methods: {
     editTodo() {
       this.todoCache = this.title;
@@ -63,7 +64,7 @@ export default {
       }
       this.isEditing = false;
 
-      this.$emit("finishedEdit", {
+      this.$store.dispatch("doneEdit", {
         id: this.id,
         title: this.title,
         isCompleted: this.isCompleted,
@@ -75,7 +76,7 @@ export default {
       this.isEditing = false;
     },
     removeTodo() {
-      this.$emit("removedTodo", this.id);
+      this.$store.dispatch("removeTodo", this.id);
     }
   },
   watch: {

@@ -11,14 +11,7 @@
       enter-active-class="animated fadeInUp"
       leave-active-class="animated fadeOutDown"
     >
-      <todo-item
-        @removedTodo="removeTodo"
-        @finishedEdit="finishEdit"
-        v-for="todo in filteredTodos"
-        :key="todo.id"
-        :todo="todo"
-        :remaining="remaining"
-      ></todo-item>
+      <todo-item v-for="todo in filteredTodos" :key="todo.id" :todo="todo"></todo-item>
     </transition-group>
     <div class="extra-container">
       <div>
@@ -30,9 +23,9 @@
     </div>
     <div class="extra-container">
       <div>
-        <button @click="filter = 'all'" :class="{active:filter=='all'}">All</button>
-        <button @click="filter = 'active'" :class="{active:filter=='active'}">Active</button>
-        <button @click="filter = 'completed'" :class="{active:filter=='completed'}">Completed</button>
+        <button @click="changeFilter('all')" :class="{active:filter=='all'}">All</button>
+        <button @click="changeFilter('active')" :class="{active:filter=='active'}">Active</button>
+        <button @click="changeFilter('completed')" :class="{active:filter=='completed'}">Completed</button>
       </div>
       <div>
         <transition name="fade">
@@ -45,6 +38,7 @@
 
 <script>
 import todoItem from "./todoItem";
+import { mapGetters } from "vuex";
 export default {
   name: "todo-list",
   components: {
@@ -53,27 +47,11 @@ export default {
   data() {
     return {
       newTodo: "",
-      filter: "all",
-      index: 0,
-      todos: []
+      index: 0
     };
   },
   computed: {
-    remaining() {
-      return this.todos.filter(x => x.isCompleted == false).length;
-    },
-    filteredTodos() {
-      if (this.filter == "all") {
-        return this.todos;
-      } else if (this.filter == "active") {
-        return this.todos.filter(x => !x.isCompleted);
-      } else if (this.filter == "completed") {
-        return this.todos.filter(x => x.isCompleted);
-      }
-    },
-    clearBtn() {
-      return this.todos.filter(x => x.isCompleted).length;
-    }
+    ...mapGetters(["remaining", "filteredTodos", "clearBtn", "filter"])
   },
   methods: {
     addTodo() {
@@ -81,7 +59,7 @@ export default {
         alert("Please add todo name");
         return;
       }
-      this.todos.push({
+      this.$store.dispatch("addTodo", {
         id: this.index,
         title: this.newTodo,
         isCompleted: false,
@@ -90,20 +68,14 @@ export default {
       this.index++;
       this.newTodo = "";
     },
-    removeTodo(id) {
-      this.todos = this.todos.filter(x => x.id != id);
-    },
     checkAll(e) {
-      console.log(e.target.checked);
-      this.todos.map(x => (x.isCompleted = e.target.checked));
+      this.$store.dispatch("checkAll", e.target);
     },
     clearCompleted() {
-      this.todos = this.todos.filter(x => !x.isCompleted);
+      this.$store.dispatch("clearCompleted");
     },
-    finishEdit(data) {
-      // console.log(data);
-      const index = this.todos.findIndex(x => x.id == data.id);
-      this.todos.splice(index, 1, data);
+    changeFilter(filter) {
+      this.$store.dispatch("changeFilter", filter);
     }
   }
 };
