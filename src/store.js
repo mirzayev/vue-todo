@@ -1,12 +1,15 @@
 import Vue from "vue";
 import Vuex from "vuex";
+import db from "./firebase";
+import { stat } from "fs";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
   state: {
     filter: "all",
-    todos: []
+    todos: [],
+    loading: true
   },
   getters: {
     remaining(state) {
@@ -26,6 +29,9 @@ export const store = new Vuex.Store({
     },
     filter(state) {
       return state.filter;
+    },
+    loading(state) {
+      return state.loading;
     }
   },
   mutations: {
@@ -47,23 +53,90 @@ export const store = new Vuex.Store({
     },
     changeFilter(state, filter) {
       state.filter = filter;
+    },
+    GET_TODOS(state, todos) {
+      state.todos = todos;
     }
   },
   actions: {
+    getTodos({ commit, state }) {
+      // state.loading = true;
+      let tempTodos = [];
+      db.collection("todos")
+        .orderBy("timestamp", "desc")
+        .get()
+        .then(querySnap => {
+          querySnap.forEach(doc =>
+            tempTodos.push({
+              id: doc.id,
+              title: doc.data().title,
+              isCompleted: doc.data().completed,
+              timestamp: doc.data().timestamp,
+              isEditing: false
+            })
+          );
+        });
+      commit("GET_TODOS", tempTodos);
+    },
     addTodo({ commit }, todo) {
-      commit("addTodo", todo);
+      db.collection("todos")
+        .add({
+          title: todo.title,
+          completed: false,
+          timestamp: new Date()
+        })
+        .then(docRef => {
+          commit("addTodo", {
+            id: docRef.id,
+            title: todo.title,
+            completed: false
+          });
+        });
     },
     removeTodo({ commit }, id) {
-      commit("removeTodo", id);
+      db.collection("todos")
+        .doc(id)
+        .delete()
+        .then(() => {
+          commit("removeTodo", id);
+        });
     },
     doneEdit({ commit }, todo) {
-      commit("doneEdit", todo);
+      db.collection("todos")
+        .doc(todo.id)
+        .update({
+          title: todo.title,
+          completed: todo.isCompleted,
+          timestamp: new Date()
+        })
+        .then(() => {
+          commit("doneEdit", todo);
+        });
     },
     clearCompleted({ commit }) {
-      commit("clearCompleted");
+      db.collection("todos")
+        .where("completed", "==", true)
+        .get()
+        .then(querySnap =>
+          querySnap.forEach(doc =>
+            doc.ref.delete().then(() => commit("clearCompleted"))
+          )
+        );
     },
     checkAll({ commit }, target) {
-      commit("checkAll", target);
+      db.collection("todos")
+        .get()
+        .then(querySnap => {
+          querySnap.forEach(doc => {
+            doc.ref
+              .update({
+                completed: target.checked
+              })
+              .then(() => {
+                commit("checkAll", target);
+              });
+          });
+        });
     },
     changeFilter({ commit }, filter) {
       commit("changeFilter", filter);
